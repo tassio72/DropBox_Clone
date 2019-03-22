@@ -35,15 +35,57 @@ class DropBoxController {
         });
 
         this.btnInputFileEl.addEventListener("change", event => {
+
+            this.btnSendFileEl.disabled = true;
             
-            this.uploadTask(event.target.files); //pegando os arquivos selecionados
+            this.uploadTask(event.target.files).then(responses => {//pegando os arquivos selecionados, aguardando promises
+
+                //para cada resposta vinda do método, temos um arquivo. Agora temos que tratar cada arquivo
+               
+                responses.forEach(resp => {
+
+                    //enviando os dados para o band ode dados
+                    this.getFirebaseRef().push().set(resp.files["input-file"]);
+                    /*Importante: Aqui estamos passando as informações do arquivo e não o arquivo em si.
+                    Essas informações serão jogadas na views despois
+                    Nós estamos listando as informações no firebase para termos um melhor desempenho do que pegar diretor do diretório
+                    */
+
+                })
+
+                this.uploadComplete();
+               
+
+            }).catch(err => {
+                
+                this.uploadComplete();
+                console.log(err);
+            })
             
             //exibir barra de carregamento de imagem via CSS
             this.modalShow();
             
-            this.btnInputFileEl.value = ""; //zerando a informação do arquivo
+            
 
         })
+
+
+    }
+
+    uploadComplete() {
+
+        this.modalShow(false);
+        this.btnInputFileEl.value = ""; //zerando a informação do arquivo
+        this.btnSendFileEl.disabled = false;
+
+    }
+
+    getFirebaseRef() {
+        //vamos usar os recursos de banco de dados do FireBase
+        //FIREBASE TRABALHA COM JSON, MAIS UMA VANTAGEM DE ESTAR USANDO O FORMIDABLE
+
+        //precisamos acessar a variável global firebase (criada no campo do bando).database.ref()
+        return firebase.database().ref("files")//no método ref passamos a rota do nosso bando de onde iremos guardar as informações
 
 
     }
@@ -76,7 +118,6 @@ class DropBoxController {
 
                 ajax.onload = event => {
 
-                    this.modalShow(false);
 
                     try {
 
@@ -95,7 +136,7 @@ class DropBoxController {
                 ajax.onerror = event => {
                     
                     reject(event);
-                    this.modalShow(false);
+                   
                 
                 }
 
@@ -126,7 +167,7 @@ class DropBoxController {
         });
 
         return Promise.all(promises)
-           
+           /*O Promise.all vai retornar uma promessa para cada arquivo carregado para onde o método foi chaamado. */
         
     }
 
